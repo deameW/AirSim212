@@ -430,16 +430,18 @@ class TrainingUi(QWidget):
             self.traj_pw.setXRange(max=60, min=-60)
             self.traj_pw.setYRange(max=60, min=-60)
         elif self.cfg.get('options', 'env_name') == 'NH_center':
-            background_image_path = 'resources/env_maps/NH_center.png'
+            background_image_path = 'resources/env_maps/NH.png'
             img_data = Image.open(background_image_path)
             image = np.copy(img_data)
             self.background_img = pg.ImageItem(image)
             self.traj_pw.addItem(self.background_img)
             # make sure image is behind other data
             self.background_img.setZValue(-100)
-            self.background_img.setRect(pg.QtCore.QRectF(-135, -135, 270, 270))
-            self.traj_pw.setXRange(max=135, min=-135)
-            self.traj_pw.setYRange(max=135, min=-135)
+            self.traj_pw.removeItem(self.background_img)
+
+            self.background_img.setRect(pg.QtCore.QRectF(-300, -300, 300, 300))
+            self.traj_pw.setXRange(max=300, min=-300)
+            self.traj_pw.setYRange(max=300, min=-300)
         elif self.cfg.get('options', 'env_name') == 'City_400':
             background_image_path = 'resources/env_maps/city_400.png'
             img_data = Image.open(background_image_path)

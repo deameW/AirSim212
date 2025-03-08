@@ -21,11 +21,13 @@ def get_parser():
 def main():
 
     # set evaluation model path
-    eval_path = r'C:\Users\helei\Documents\GitHub\UAV_Navigation_DRL_AirSim\logs\SimpleAvoid\2022_09_06_15_05_SimpleMultirotor_No_CNN_SAC'
-
+    eval_path = r'D:\AirSim\Models\SAC'
+    # eval_path = r'D:\AirSim\Models\2024_04_11_22_01_Multirotor_No_CNN_DDPG'
+    # eval_path = r'C:\Users\Administrator\Desktop\Models\2024_04_10_12_57_Multirotor_No_CNN_SAC'
     # select config file and model name
     config_file = eval_path + '/config/config.ini'
-    # config_file = r"D:\OneDrive - mail.nwpu.edu.cn\Github\PhD-thesis-plot\CH3\3_1_simple_training_and_anaylysis\3_1_4_training_analysis_multi\data\2022_08_30_10_43_SimpleMultirotor_No_CNN_SAC\config\config.ini"
+    # config_file = r"D:\OneDrive - mail.nwp
+    # u.edu.cn\Github\PhD-thesis-plot\CH3\3_1_simple_training_and_anaylysis\3_1_4_training_analysis_multi\data\2022_08_30_10_43_SimpleMultirotor_No_CNN_SAC\config\config.ini"
     model_file = eval_path + '/models/model_sb3.zip'
     # config_file = r"C:\Users\helei\Documents\GitHub\UAV_Navigation_DRL_AirSim\configs\config_new.ini"
     # model_file = eval_path + '/models/model_200000.zip'
@@ -38,7 +40,7 @@ def main():
 
     # 2. Start training thread
     evaluate_thread = EvaluateThread(
-        eval_path, config_file, model_file, total_eval_episodes)
+        eval_path, config_file, model_file, total_eval_episodes, "NH_center")
     evaluate_thread.env.action_signal.connect(gui.action_cb)
     evaluate_thread.env.state_signal.connect(gui.state_cb)
     evaluate_thread.env.attitude_signal.connect(gui.attitude_plot_cb)

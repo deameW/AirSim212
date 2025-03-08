@@ -3,7 +3,7 @@ import datetime
 import gym
 import gym_env
 import numpy as np
-from stable_baselines3 import TD3, PPO, SAC
+from stable_baselines3 import TD3, PPO, SAC, DDPG
 from stable_baselines3.common.noise import NormalActionNoise
 from wandb.integration.sb3 import WandbCallback
 import wandb
@@ -196,6 +196,29 @@ class TrainingThread(QtCore.QThread):
                 tensorboard_log=log_path,
                 seed=0,
                 verbose=2)
+
+        elif algo == 'DDPG':
+            # The noise objects for DDPG
+            n_actions = self.env.action_space.shape[-1]
+            noise_sigma = self.cfg.getfloat(
+                'DRL', 'action_noise_sigma') * np.ones(n_actions)
+            action_noise = NormalActionNoise(mean=np.zeros(n_actions),
+                                             sigma=noise_sigma)
+            model = DDPG(
+                policy_base,
+                self.env,
+                action_noise=action_noise,
+                learning_rate=self.cfg.getfloat('DRL', 'learning_rate'),
+                gamma=self.cfg.getfloat('DRL', 'gamma'),
+                policy_kwargs=policy_kwargs,
+                learning_starts=self.cfg.getint('DRL', 'learning_starts'),
+                batch_size=self.cfg.getint('DRL', 'batch_size'),
+                train_freq=(self.cfg.getint('DRL', 'train_freq'), 'step'),
+                gradient_steps=self.cfg.getint('DRL', 'gradient_steps'),
+                buffer_size=self.cfg.getint('DRL', 'buffer_size'),
+                tensorboard_log=log_path,
+                seed=0,
+                verbose=2)
         else:
             raise Exception('Invalid algo name : ', algo)
 
@@ -208,6 +231,7 @@ class TrainingThread(QtCore.QThread):
 
         #! -------------------------------------train-----------------------------------------
         print('start training model')
+        print('\n','=============================\n',f'model struct: {model.policy}')
         total_timesteps = self.cfg.getint('options', 'total_timesteps')
         self.env.model = model
         self.env.data_path = data_path

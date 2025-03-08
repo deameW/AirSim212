@@ -65,12 +65,13 @@ class No_CNN(BaseFeaturesExtractor):
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
         depth_img = observations[:, 0:1, :, :]
-
+        #print(depth_img.shape)
         cnn_feature = self.cnn(depth_img)  # [1, 25, 1, 1]
         # print(cnn_feature)
         # print(self.feature_num_state)
-
+        #print(cnn_feature.shape)
         state_feature = observations[:, 1, 0, 0:self.feature_num_state]
+
         # transfer state feature from 0~1 to -1~1
         # state_feature = state_feature*2 - 1
         # print(state_feature.size(), cnn_feature.size())
