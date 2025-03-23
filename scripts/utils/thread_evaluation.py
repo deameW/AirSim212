@@ -316,7 +316,20 @@ def mutator(arg, l):
     return [x, y, z]
 
 
-def DRLFuzz(num, n, l, alpha, theta, coverage, mu):
+
+def DRLFuzz(num, n, l, alpha, theta, coverage, mu, metric_list):
+    """
+    覆盖测试函数
+    :param num: 初始化数量
+    :param n: 迭代次数
+    :param l: ？
+    :param alpha: ？
+    :param theta: 失败得分阈值
+    :param coverage: 是否是覆盖测试
+    :param mu: 测试用例生成方式
+    :param metric_list: 覆盖率指标列表
+    :return: CoverageTestResponse 对象
+    """
     eval_ep_num = 1
 
     global kdTree
@@ -408,27 +421,10 @@ if __name__ == "__main__":
     try:
         # main()
         # result = DRLFuzz(1, 10, 10, 0.1, 100, True)
-        result = DRLFuzz(1, 1, 1, 0.1, 100, True, "genetic") # grad or genetic
+        result = DRLFuzz(1, 1, 1, 0.1, 100, True, "genetic", []) # grad or genetic
         # run_eval_multi()
     except KeyboardInterrupt:
         print('system exit')
-
-class UploadModelInfo:
-    def __init__(self, ModelName, ModelPath):
-        self.ModelName = ModelName
-        self.ModelPath = ModelPath
-
-
-class GenerateState:
-    def __init__(self, UAVState):
-        self.UAVState = UAVState
-
-
-class UAVCordinates:
-    def __init__(self, X, Y, Z):
-        self.X = X
-        self.Y = Y
-        self.Z = Z
 
 
 class TestRecord:
@@ -481,3 +477,22 @@ def coverage_test(CoverageTestTaskID, TargetModels, Scene, CoverageMetrics, Muta
 
     response = CoverageTestResponse(CoverageTestTaskID, records)
     return response
+
+
+# 结构定义
+class UploadModelInfo:
+    def __init__(self, ModelName, ModelPath):
+        self.ModelName = ModelName
+        self.ModelPath = ModelPath
+
+
+class GenerateState:
+    def __init__(self, UAVState):
+        self.UAVState = UAVState
+
+
+class UAVCordinates:
+    def __init__(self, X, Y, Z):
+        self.X = X
+        self.Y = Y
+        self.Z = Z
