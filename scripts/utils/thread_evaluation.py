@@ -28,7 +28,6 @@ config_file = eval_path + '/config/config.ini'
 model_file = eval_path + '/models/model_sb3.zip'
 savePath = "./DRLResult/drl_result.txt"
 
-
 resultPool = set()
 allStates = set()
 resultNum = list()
@@ -194,6 +193,7 @@ class EvaluateThread(QtCore.QThread):
         self.obs = obs
         return
 
+
 #
 # def main():
 #     eval_path = r'D:\AirSim\Models\SAC'
@@ -316,7 +316,6 @@ def mutator(arg, l):
     return [x, y, z]
 
 
-
 def DRLFuzz(num, n, l, alpha, theta, coverage, mu, metric_list):
     """
     覆盖测试函数
@@ -328,8 +327,8 @@ def DRLFuzz(num, n, l, alpha, theta, coverage, mu, metric_list):
     :param coverage: 是否是覆盖测试
     :param mu: 测试用例生成方式
     :param metric_list: 覆盖率指标列表
-    :return: CoverageTestResponse 对象
     """
+
     eval_ep_num = 1
 
     global kdTree
@@ -366,6 +365,8 @@ def DRLFuzz(num, n, l, alpha, theta, coverage, mu, metric_list):
                     st = nga_mutator(initialPosition[idx[i]], l)
                 if mu == "grad":
                     st = mutator(initialPosition[idx[i]], l)
+
+                # todo： 这里需要@panchang 的指标计算方法，将计数的方法替换成具体的覆盖率指标。
                 if st != initialPosition[idx[i]]:
                     initialPosition[idx[i]] = st
                 else:
@@ -378,6 +379,7 @@ def DRLFuzz(num, n, l, alpha, theta, coverage, mu, metric_list):
         for i in resultPool:
             print(i)
 
+    # todo： 这里需要@panchang 的指标计算，返回coverage结果
     return resultPool
 
 
@@ -393,8 +395,8 @@ def nga_mutator(arg, mutation_rate=0.15, niche_radius=2.0):
 
     # 使用全局KD树计算小生境密度
     if kdTree is not None and kdTree.data.size > 0:
-        # 查询最近邻居距离（考虑x,y坐标）
-        # dist, _ = kdTree.query(np.array([x, y]), k=1)
+        # 查询最近邻居距离（考虑x,y,z坐标）
+        # dist, _ = kdTree.query(np.array([x, y, z]), k=1)
         # density = 1 / (dist + 1e-6)  # 计算密度值
         adaptive_rate = mutation_rate * (1 + niche_radius / (1 + 0.6))  # 自适应变异率
     else:
@@ -417,14 +419,32 @@ def nga_mutator(arg, mutation_rate=0.15, niche_radius=2.0):
     return [x, y, z]
 
 
-if __name__ == "__main__":
-    try:
-        # main()
-        # result = DRLFuzz(1, 10, 10, 0.1, 100, True)
-        result = DRLFuzz(1, 1, 1, 0.1, 100, True, "genetic", []) # grad or genetic
-        # run_eval_multi()
-    except KeyboardInterrupt:
-        print('system exit')
+# 假设的 DRLFuzz 方法
+def DRLFuzz(model_name, scene, coverage_metrics, mutation_method, iteration):
+    # 这里只是示例返回，实际应实现具体逻辑
+    coordinates = [UAVCordinates(1, 2, 3), UAVCordinates(4, 5, 6)]
+    coverage_result = {metric: "90.00%" for metric in coverage_metrics}
+    result_file_path = f"{model_name}_{mutation_method}_results.txt"
+    return coordinates, coverage_result, result_file_path
+
+
+# 结构定义
+class UploadModelInfo:
+    def __init__(self, ModelName, ModelPath):
+        self.ModelName = ModelName
+        self.ModelPath = ModelPath
+
+
+class GenerateState:
+    def __init__(self, UAVState):
+        self.UAVState = UAVState
+
+
+class UAVCordinates:
+    def __init__(self, X, Y, Z):
+        self.X = X
+        self.Y = Y
+        self.Z = Z
 
 
 class TestRecord:
@@ -441,15 +461,17 @@ class CoverageTestResponse:
         self.Records = Records
 
 
-# 假设的 DRLFuzz 方法
-def DRLFuzz(model_name, scene, coverage_metrics, mutation_method, iteration):
-    # 这里只是示例返回，实际应实现具体逻辑
-    coordinates = [UAVCordinates(1, 2, 3), UAVCordinates(4, 5, 6)]
-    coverage_result = {metric: "90.00%" for metric in coverage_metrics}
-    result_file_path = f"{model_name}_{mutation_method}_results.txt"
-    return coordinates, coverage_result, result_file_path
+if __name__ == "__main__":
+    try:
+        # main()
+        # result = DRLFuzz(1, 10, 10, 0.1, 100, True)
+        result = DRLFuzz(1, 1, 1, 0.1, 100, True, "genetic", [])  # grad or genetic
+        # run_eval_multi()
+    except KeyboardInterrupt:
+        print('system exit')
 
 
+# 封装函数
 def coverage_test(CoverageTestTaskID, TargetModels, Scene, CoverageMetrics, MutationMethods, Iteration, extra):
     """
     覆盖测试函数
@@ -477,22 +499,3 @@ def coverage_test(CoverageTestTaskID, TargetModels, Scene, CoverageMetrics, Muta
 
     response = CoverageTestResponse(CoverageTestTaskID, records)
     return response
-
-
-# 结构定义
-class UploadModelInfo:
-    def __init__(self, ModelName, ModelPath):
-        self.ModelName = ModelName
-        self.ModelPath = ModelPath
-
-
-class GenerateState:
-    def __init__(self, UAVState):
-        self.UAVState = UAVState
-
-
-class UAVCordinates:
-    def __init__(self, X, Y, Z):
-        self.X = X
-        self.Y = Y
-        self.Z = Z
