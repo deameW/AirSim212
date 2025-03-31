@@ -17,6 +17,7 @@ import os
 import sys
 import cv2
 from tqdm import tqdm
+from scripts.buaa_coverage.coverage_calculator import CoverageCalculator, CoverageType
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(CURRENT_DIR))
@@ -321,25 +322,47 @@ def DRLFuzz(num, n, l, alpha, theta, coverage, mu, metric_list):
     覆盖测试函数
     :param num: 初始化数量
     :param n: 迭代次数
-    :param l: ？
-    :param alpha: ？
+    :param l: 变异步长
+    :param alpha: 学习率
     :param theta: 失败得分阈值
     :param coverage: 是否是覆盖测试
     :param mu: 测试用例生成方式
     :param metric_list: 覆盖率指标列表
     """
-
     eval_ep_num = 1
-
     global kdTree
     score = list()
     initialPosition = list()
+    
+    # 初始化覆盖率计算器
+    calculator = CoverageCalculator(
+        position_bounds=(-50, 50),
+        attitude_bounds=(-np.pi, np.pi),
+        k_sections=5
+    )
+    
+    # 设置训练期间的边界值
+    calculator.training_state_boundaries = {
+        'high': [50, 50, 50, np.pi, np.pi, np.pi],
+        'low': [-50, -50, -50, -np.pi, -np.pi, -np.pi]
+    }
+    calculator.training_action_boundaries = {
+        'high': 1.0,
+        'low': -1.0
+    }
 
     for _ in range(num):
         s = randFun(coverage)
         initialPosition.append(s)
         score.append(0)
         allStates.add(tuple(s))
+        
+        # 记录初始状态的覆盖率
+        position = (s[0], s[1], s[2])
+        attitude = (0, 0, 0)  # 初始姿态
+        action = (0, 0, 0, 0)  # 初始动作
+        action_scalar = np.mean([abs(a) for a in action])
+        calculator.update_coverage(position, attitude, action_scalar)
 
     # 迭代n次
     for k in range(n):
@@ -357,18 +380,36 @@ def DRLFuzz(num, n, l, alpha, theta, coverage, mu, metric_list):
         print("iteration {} failed cases num:{}".format(k + 1, len(resultPool)))
         resultNum.append(len(resultPool))
 
-        idx = sorted(range(len(score)), key=lambda x: score[x])  # 得到score中元素排序后的对应索引（从小到大）
+        idx = sorted(range(len(score)), key=lambda x: score[x])
         for i in range(num):
             if i < int(num):
+                # 记录当前覆盖率
+                current_sbcov = calculator.get_coverage(CoverageType.SB_COV)
+                
                 # 对reward最小的进行变异
                 if mu == "genetic":
                     st = nga_mutator(initialPosition[idx[i]], l)
                 if mu == "grad":
                     st = mutator(initialPosition[idx[i]], l)
 
-                # todo： 这里需要@panchang 的指标计算方法，将计数的方法替换成具体的覆盖率指标。
+                # 使用SBCov的增长与否来决定是否接受变异
                 if st != initialPosition[idx[i]]:
-                    initialPosition[idx[i]] = st
+                    # 计算变异后的覆盖率
+                    position = (st[0], st[1], st[2])
+                    attitude = (0, 0, 0)  # 假设姿态不变
+                    action = (0, 0, 0, 0)  # 假设动作不变
+                    action_scalar = np.mean([abs(a) for a in action])
+                    calculator.update_coverage(position, attitude, action_scalar)
+                    
+                    new_sbcov = calculator.get_coverage(CoverageType.SB_COV)
+                    if new_sbcov > current_sbcov:
+                        initialPosition[idx[i]] = st
+                    else:
+                        # 如果覆盖率没有提升，回滚覆盖率计算
+                        calculator.update_coverage(
+                            (initialPosition[idx[i]][0], initialPosition[idx[i]][1], initialPosition[idx[i]][2]),
+                            attitude, action_scalar
+                        )
                 else:
                     initialPosition[idx[i]] = randFun(coverage)
             else:
@@ -379,8 +420,15 @@ def DRLFuzz(num, n, l, alpha, theta, coverage, mu, metric_list):
         for i in resultPool:
             print(i)
 
-    # todo： 这里需要@panchang 的指标计算，返回coverage结果
-    return resultPool
+    # 返回所有覆盖率指标
+    final_coverages = calculator.get_coverage()
+    print("\n最终覆盖率结果:")
+    print("-" * 50)
+    for cov_type, value in final_coverages.items():
+        print(f"{cov_type.value}: {value:.4f}")
+    print("-" * 50)
+    
+    return resultPool, final_coverages
 
 
 def nga_mutator(arg, mutation_rate=0.15, niche_radius=2.0):
